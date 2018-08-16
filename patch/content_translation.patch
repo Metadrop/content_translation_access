@@ -1,0 +1,827 @@
+diff --git a/modules/content_translation/content_translation.api.php b/modules/content_translation/content_translation.api.php
+new file mode 100644
+index 0000000000..b1e2fb0e30
+--- /dev/null
++++ b/modules/content_translation/content_translation.api.php
+@@ -0,0 +1,72 @@
++<?php
++
++/**
++ * @file
++ * Hooks related to content translation and its plugins.
++ */
++
++use Drupal\Core\Access\AccessResult;
++
++/**
++ * @addtogroup hooks
++ * @{
++ */
++
++/**
++ * Control entity translation access.
++ *
++ * @param \Drupal\Core\Entity\EntityInterface $entity
++ *   The entity to check access to.
++ * @param string $operation
++ *   The operation that is to be performed on $entity.
++ * @param \Drupal\Core\Session\AccountInterface $account
++ *   The account trying to access the entity.
++ *
++ * @return \Drupal\Core\Access\AccessResultInterface
++ *   The access result. The final result is calculated by using
++ *   \Drupal\Core\Access\AccessResultInterface::orIf() on the result of every
++ *   hook_entity_translation_access() implementation, and the result of the
++ *   permissions checks in access() method in the content
++ *   translation access handler.
++ *
++ * @see \Drupal\content_translation\ContentTranslationHandler
++ *
++ * @ingroup content_translation
++ */
++function hook_entity_translation_access(\Drupal\Core\Entity\EntityInterface $entity, $operation, \Drupal\Core\Session\AccountInterface $account) {
++  // No opinion.
++  return AccessResult::neutral();
++}
++
++/**
++ * Control entity translation create access.
++ *
++ * @param \Drupal\Core\Entity\EntityInterface $entity
++ *   The translation source entity to check access to.
++ * @param \Drupal\Core\Session\AccountInterface $account
++ *   The account trying to access the entity.
++ * @param array $context
++ *   An associative array of additional context values. By default it contains
++ *   language and the entity type ID:
++ *   - entity_type_id - the entity type ID.
++ *   - langcode - the translation language code.
++
++ * @return \Drupal\Core\Access\AccessResultInterface
++ *   The access result. The final result is calculated by using
++ *   \Drupal\Core\Access\AccessResultInterface::orIf() on the result of every
++ *   hook_entity_translation_access_create() implementation, and the result of the
++ *   permissions checks in createAccess() method in the content access
++ *   translation handler.
++ *
++ * @see \Drupal\content_translation\ContentTranslationHandler
++ *
++ * @ingroup content_translation
++ */
++function hook_entity_translation_access_create(\Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Session\AccountInterface $account, $context = []) {
++  // No opinion.
++  return AccessResult::neutral();
++}
++
++/**
++ * @} End of "addtogroup hooks".
++ */
+diff --git a/modules/content_translation/content_translation.module b/modules/content_translation/content_translation.module
+index cd8b27fdac..ea26ab9493 100644
+--- a/modules/content_translation/content_translation.module
++++ b/modules/content_translation/content_translation.module
+@@ -135,6 +135,9 @@ function content_translation_entity_type_alter(array &$entity_types) {
+       if (!$entity_type->hasHandlerClass('translation')) {
+         $entity_type->setHandlerClass('translation', 'Drupal\content_translation\ContentTranslationHandler');
+       }
++      if (!$entity_type->hasHandlerClass('translation_access')) {
++        $entity_type->setHandlerClass('translation_access', 'Drupal\content_translation\ContentTranslationAccessControlHandler');
++      }
+       if (!$entity_type->get('content_translation_metadata')) {
+         $entity_type->set('content_translation_metadata', 'Drupal\content_translation\ContentTranslationMetadataWrapper');
+       }
+diff --git a/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php b/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php
+index bbf0540e90..c9aa47da3d 100644
+--- a/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php
++++ b/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php
+@@ -93,8 +93,8 @@ class ContentTranslationManageAccessCheck implements AccessInterface {
+ 
+       switch ($operation) {
+         case 'create':
+-          /* @var \Drupal\content_translation\ContentTranslationHandlerInterface $handler */
+-          $handler = $this->entityManager->getHandler($entity->getEntityTypeId(), 'translation');
++          /* @var \Drupal\Core\Entity\EntityAccessControlHandlerInterface $handler */
++          $translation_access_handler = $this->entityManager->getHandler($entity->getEntityTypeId(), 'translation_access');
+           $translations = $entity->getTranslationLanguages();
+           $languages = $this->languageManager->getLanguages();
+           $source_language = $this->languageManager->getLanguage($source) ?: $entity->language();
+@@ -104,7 +104,7 @@ class ContentTranslationManageAccessCheck implements AccessInterface {
+             && isset($languages[$target_language->getId()])
+             && !isset($translations[$target_language->getId()]));
+           return AccessResult::allowedIf($is_new_translation)->cachePerPermissions()->addCacheableDependency($entity)
+-            ->andIf($handler->getTranslationAccess($entity, $operation));
++            ->orIf($translation_access_handler->createAccess($entity->bundle(), NULL, ['langcode' => $target_language->getId(), 'source_entity' => $entity], TRUE));
+ 
+         case 'delete':
+           // @todo Remove this in https://www.drupal.org/node/2945956.
+@@ -137,15 +137,15 @@ class ContentTranslationManageAccessCheck implements AccessInterface {
+    *   An access result object.
+    */
+   protected function checkAccess(ContentEntityInterface $entity, LanguageInterface $language, $operation) {
+-    /* @var \Drupal\content_translation\ContentTranslationHandlerInterface $handler */
+-    $handler = $this->entityManager->getHandler($entity->getEntityTypeId(), 'translation');
++    /* @var \Drupal\Core\Entity\EntityAccessControlHandlerInterface $handler */
++    $access_handler = $this->entityManager->getHandler($entity->getEntityTypeId(), 'translation_access');
+     $translations = $entity->getTranslationLanguages();
+     $languages = $this->languageManager->getLanguages();
+     $has_translation = isset($languages[$language->getId()])
+       && $language->getId() != $entity->getUntranslated()->language()->getId()
+       && isset($translations[$language->getId()]);
+     return AccessResult::allowedIf($has_translation)->cachePerPermissions()->addCacheableDependency($entity)
+-      ->andIf($handler->getTranslationAccess($entity, $operation));
++      ->andIf($access_handler->access($entity, $operation, NULL, TRUE));
+   }
+ 
+ }
+diff --git a/modules/content_translation/src/ContentTranslationAccessControlHandler.php b/modules/content_translation/src/ContentTranslationAccessControlHandler.php
+new file mode 100644
+index 0000000000..fc7ecbf77e
+--- /dev/null
++++ b/modules/content_translation/src/ContentTranslationAccessControlHandler.php
+@@ -0,0 +1,286 @@
++<?php
++
++namespace Drupal\content_translation;
++
++use Drupal\Core\Access\AccessResult;
++use Drupal\Core\Access\AccessResultInterface;
++use Drupal\Core\Entity\EntityAccessControlHandlerInterface;
++use Drupal\Core\Entity\EntityHandlerInterface;
++use Drupal\Core\Entity\EntityInterface;
++use Drupal\Core\Entity\EntityTypeInterface;
++use Drupal\Core\Extension\ModuleHandlerInterface;
++use Drupal\Core\Field\FieldDefinitionInterface;
++use Drupal\Core\Field\FieldItemListInterface;
++use Drupal\Core\Language\LanguageInterface;
++use Drupal\Core\Session\AccountInterface;
++use Symfony\Component\DependencyInjection\ContainerInterface;
++
++/**
++ * Defines a default implementation for entity access control handler.
++ */
++class ContentTranslationAccessControlHandler implements EntityAccessControlHandlerInterface, EntityHandlerInterface {
++  /**
++   * The module handler to invoke hooks on.
++   *
++   * @var \Drupal\Core\Extension\ModuleHandlerInterface
++   */
++  protected $moduleHandler;
++
++  /**
++   * Stores calculated access check results.
++   *
++   * @var array
++   */
++  protected $accessCache = [];
++
++  /**
++   * Constructs an access control handler instance.
++   *
++   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
++   *   The entity type definition.
++   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
++   *   The entity type definition.
++   */
++  public function __construct(EntityTypeInterface $entity_type, ModuleHandlerInterface $module_handler) {
++    $this->entityTypeId = $entity_type->id();
++    $this->entityType = $entity_type;
++    $this->moduleHandler = $module_handler;
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  public function access(EntityInterface $entity, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
++    $account = $this->prepareUser($account);
++    $langcode = $entity->language()->getId();
++
++    // If an entity does not have a UUID, either from not being set or from not
++    // having them, use the 'entity type:ID' pattern as the cache $cid.
++    $cid = $entity->uuid() ?: $entity->getEntityTypeId() . ':' . $entity->id();
++
++    // If the entity is revisionable, then append the revision ID to allow
++    // individual revisions to have specific access control and be cached
++    // separately.
++    if ($entity instanceof RevisionableInterface) {
++      $cid .= ':' . $entity->getRevisionId();
++    }
++
++    if (($return = $this->getCache($cid, $operation, $langcode, $account)) !== NULL) {
++      // Cache hit, no work necessary.
++      return $return_as_object ? $return : $return->isAllowed();
++    }
++
++    // We grant access to the translation if both of these conditions are met:
++    // - No modules say to deny access.
++    // - At least one module says to grant access.
++    $access = $this->moduleHandler->invokeAll(
++      'entity_translation_access', [$entity, $operation, $account]
++    );
++    $return = $this->processAccessHookResults($access);
++
++    // Also execute the default access check except when the access result is
++    // already forbidden, as in that case, it can not be anything else.
++    if (!$return->isForbidden()) {
++      $return = $return->orIf($this->checkAccess($entity->bundle(), $operation, $account));
++    }
++
++    $result = $this->setCache($return, $cid, $operation, $langcode, $account);
++    return $return_as_object ? $result : $result->isAllowed();
++  }
++
++  /**
++   * Performs access checks.
++   *
++   * This method is supposed to be overwritten by extending classes that
++   * do their own custom access checking.
++   *
++   * @param string $bundle
++   *   The entity bundle for which to check access.
++   * @param string $operation
++   *   The entity operation. Usually one of 'view', 'view label', 'update' or
++   *   'delete'.
++   * @param \Drupal\Core\Session\AccountInterface $account
++   *   The user for which to check access.
++   *
++   * @return \Drupal\Core\Access\AccessResultInterface
++   *   The access result.
++   */
++  private function checkAccess($bundle, $operation, AccountInterface $account) {
++    // If no permission granularity is defined this entity type does not need an
++    // explicit translate permission.
++    if ($account->hasPermission('translate any entity')) {
++      return AccessResult::allowed();
++    }
++
++    if (!$account->hasPermission('translate any entity') && $permission_granularity = $this->entityType->getPermissionGranularity()) {
++
++      $translate_permission = $account->hasPermission($permission_granularity == 'bundle' ? "translate {$bundle} {$this->entityTypeId}" : "translate {$this->entityTypeId}");
++    }
++    $result = AccessResult::allowedIf($translate_permission && $account->hasPermission("$operation content translations"))->cachePerPermissions();
++    return $result;
++  }
++
++  /**
++   * We grant access to the entity if both of these conditions are met:
++   * - No modules say to deny access.
++   * - At least one module says to grant access.
++   *
++   * @param \Drupal\Core\Access\AccessResultInterface[] $access
++   *   An array of access results of the fired access hook.
++   *
++   * @return \Drupal\Core\Access\AccessResultInterface
++   *   The combined result of the various access checks' results. All their
++   *   cacheability metadata is merged as well.
++   *
++   * @see \Drupal\Core\Access\AccessResultInterface::orIf()
++   */
++  protected function processAccessHookResults(array $access) {
++    // No results means no opinion.
++    if (empty($access)) {
++      return AccessResult::neutral();
++    }
++
++    /** @var \Drupal\Core\Access\AccessResultInterface $result */
++    $result = array_shift($access);
++    foreach ($access as $other) {
++      $result = $result->orIf($other);
++    }
++    return $result;
++  }
++
++  /**
++   * Tries to retrieve a previously cached access value from the static cache.
++   *
++   * @param string $cid
++   *   Unique string identifier for the entity/operation, for example the
++   *   entity UUID or a custom string.
++   * @param string $operation
++   *   The entity operation. Usually one of 'view', 'update', 'create' or
++   *   'delete'.
++   * @param string $langcode
++   *   The language code for which to check access.
++   * @param \Drupal\Core\Session\AccountInterface $account
++   *   The user for which to check access.
++   *
++   * @return \Drupal\Core\Access\AccessResultInterface|null
++   *   The cached AccessResult, or NULL if there is no record for the given
++   *   user, operation, langcode and entity in the cache.
++   */
++  protected function getCache($cid, $operation, $langcode, AccountInterface $account) {
++    // Return from cache if a value has been set for it previously.
++    if (isset($this->accessCache[$account->id()][$cid][$langcode][$operation])) {
++      return $this->accessCache[$account->id()][$cid][$langcode][$operation];
++    }
++  }
++
++  /**
++   * Statically caches whether the given user has access.
++   *
++   * @param \Drupal\Core\Access\AccessResultInterface $access
++   *   The access result.
++   * @param string $cid
++   *   Unique string identifier for the entity/operation, for example the
++   *   entity UUID or a custom string.
++   * @param string $operation
++   *   The entity operation. Usually one of 'view', 'update', 'create' or
++   *   'delete'.
++   * @param string $langcode
++   *   The language code for which to check access.
++   * @param \Drupal\Core\Session\AccountInterface $account
++   *   The user for which to check access.
++   *
++   * @return \Drupal\Core\Access\AccessResultInterface
++   *   Whether the user has access, plus cacheability metadata.
++   */
++  protected function setCache(AccessResultInterface $access, $cid, $operation, $langcode, AccountInterface $account) {
++    // Save the given value in the static cache and directly return it.
++    return $this->accessCache[$account->id()][$cid][$langcode][$operation] = $access;
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  public function resetCache() {
++    $this->accessCache = [];
++  }
++  /**
++   * {@inheritdoc}
++   */
++  public function createAccess($entity_bundle  = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
++    $entity = isset($context['source_entity']) ? $context['source_entity'] : NULL;
++    $operation = 'create';
++    $entity_bundle = $entity->bundle();
++    $account = $this->prepareUser($account);
++    $context += [
++      'entity_type_id' => $this->entityTypeId,
++      'langcode' => LanguageInterface::LANGCODE_DEFAULT,
++    ];
++
++    $cid = $entity->uuid() ?: $entity->getEntityTypeId() . ':' . $entity->id() . ':create:';
++
++    if (($access = $this->getCache($cid, 'create', $context['langcode'], $account)) !== NULL) {
++      // Cache hit, no work necessary.
++      return $return_as_object ? $access : $access->isAllowed();
++    }
++
++    // We grant access to the translation if both of these conditions are met:
++    // - No modules say to deny access.
++    // - At least one module says to grant access.
++    $access = $this->moduleHandler->invokeAll(
++      'entity_translation_create_access', [$entity, $account, $context]
++    );
++
++
++    $return = $this->processAccessHookResults($access);
++    // Also execute the default access check except when the access result is
++    // already forbidden, as in that case, it can not be anything else.
++    if (!$return->isForbidden()) {
++      $return = $return->orIf($this->checkAccess($entity_bundle, $operation, $account));
++    }
++
++    $result = $this->setCache($return, $cid, $operation, $context['langcode'], $account);
++    return $return_as_object ? $result : $result->isAllowed();
++
++  }
++
++  /**
++   * Loads the current account object, if it does not exist yet.
++   *
++   * @param \Drupal\Core\Session\AccountInterface $account
++   *   The account interface instance.
++   *
++   * @return \Drupal\Core\Session\AccountInterface
++   *   Returns the current account object.
++   */
++  protected function prepareUser(AccountInterface $account = NULL) {
++    if (!$account) {
++      $account = \Drupal::currentUser();
++    }
++    return $account;
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
++    return new static(
++      $entity_type,
++      $container->get('module_handler')
++    );
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  public function fieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account = NULL, FieldItemListInterface $items = NULL, $return_as_object = FALSE) {
++    return AccessResult::allowed();
++  }
++
++  /**
++   * {@inheritdoc}
++   */
++  public function setModuleHandler(ModuleHandlerInterface $module_handler) {
++    $this->moduleHandler = $module_handler;
++  }
++
++}
+diff --git a/modules/content_translation/src/ContentTranslationHandler.php b/modules/content_translation/src/ContentTranslationHandler.php
+index e7855fb1ef..5cf25f405e 100644
+--- a/modules/content_translation/src/ContentTranslationHandler.php
++++ b/modules/content_translation/src/ContentTranslationHandler.php
+@@ -2,7 +2,6 @@
+ 
+ namespace Drupal\content_translation;
+ 
+-use Drupal\Core\Access\AccessResult;
+ use Drupal\Core\DependencyInjection\DependencySerializationTrait;
+ use Drupal\Core\Entity\EntityChangedInterface;
+ use Drupal\Core\Entity\EntityChangesDetectionTrait;
+@@ -267,17 +266,16 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
+   /**
+    * {@inheritdoc}
+    */
+-  public function getTranslationAccess(EntityInterface $entity, $op) {
+-    // @todo Move this logic into a translation access control handler checking also
+-    //   the translation language and the given account.
+-    $entity_type = $entity->getEntityType();
+-    $translate_permission = TRUE;
+-    // If no permission granularity is defined this entity type does not need an
+-    // explicit translate permission.
+-    if (!$this->currentUser->hasPermission('translate any entity') && $permission_granularity = $entity_type->getPermissionGranularity()) {
+-      $translate_permission = $this->currentUser->hasPermission($permission_granularity == 'bundle' ? "translate {$entity->bundle()} {$entity->getEntityTypeId()}" : "translate {$entity->getEntityTypeId()}");
++  public function getTranslationAccess(EntityInterface $entity, $op, $context = []) {
++    $translation_access_handler = $this->manager->getTranslationAccessControlHandler($entity->getEntityTypeId());
++    if ($op == 'create') {
++      $context['source_entity'] = $entity;
++      $result = $translation_access_handler->createAccess($entity->bundle(), NULL, $context, TRUE);
+     }
+-    return AccessResult::allowedIf($translate_permission && $this->currentUser->hasPermission("$op content translations"))->cachePerPermissions();
++    else {
++      $result = $translation_access_handler->access($entity, $op, NULL, TRUE);
++    }
++    return $result;
+   }
+ 
+   /**
+@@ -295,6 +293,7 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
+    */
+   public function entityFormAlter(array &$form, FormStateInterface $form_state, EntityInterface $entity) {
+     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
++    $access_handler = $this->manager->getTranslationAccessControlHandler($entity->getEntityTypeId());
+ 
+     $form_object = $form_state->getFormObject();
+     $form_langcode = $form_object->getFormLangcode($form_state);
+@@ -393,7 +392,7 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
+         /** @var \Drupal\Core\Access\AccessResultInterface $delete_access */
+         $delete_access = \Drupal::service('content_translation.delete_access')->checkAccess($entity);
+         $access = $delete_access->isAllowed() && (
+-          $this->getTranslationAccess($entity, 'delete')->isAllowed() ||
++            $access_handler->access($entity, 'delete', NULL, TRUE)->isAllowed() ||
+           ($entity->access('delete') && $this->entityType->hasLinkTemplate('delete-form'))
+         );
+         $form['actions']['delete_translation'] = [
+@@ -412,12 +411,14 @@ class ContentTranslationHandler implements ContentTranslationHandlerInterface, E
+     // We need to display the translation tab only when there is at least one
+     // translation available or a new one is about to be created.
+     if ($new_translation || $has_translations) {
++      $op = $source_langcode ? 'create' : 'update';
+       $form['content_translation'] = [
+         '#type' => 'details',
+         '#title' => t('Translation'),
+         '#tree' => TRUE,
+         '#weight' => 10,
+-        '#access' => $this->getTranslationAccess($entity, $source_langcode ? 'create' : 'update')->isAllowed(),
++        '#access' => $op == 'create' ? $access_handler->createAccess($entity->bundle(), NULL, ['langcode' => $source_langcode, 'source_entity' => $entity], TRUE)->isAllowed()
++        : $access_handler->access($entity, $op, NULL, TRUE),
+         '#multilingual' => TRUE,
+       ];
+ 
+diff --git a/modules/content_translation/src/ContentTranslationHandlerInterface.php b/modules/content_translation/src/ContentTranslationHandlerInterface.php
+index 8534a539ab..f9489213d8 100644
+--- a/modules/content_translation/src/ContentTranslationHandlerInterface.php
++++ b/modules/content_translation/src/ContentTranslationHandlerInterface.php
+@@ -21,6 +21,7 @@ interface ContentTranslationHandlerInterface {
+   public function getFieldDefinitions();
+ 
+   /**
++   *
+    * Checks if the user can perform the given operation on translations of the
+    * wrapped entity.
+    *
+@@ -34,6 +35,8 @@ interface ContentTranslationHandlerInterface {
+    *
+    * @return \Drupal\Core\Access\AccessResultInterface
+    *   The access result.
++   *
++   * @deprecated in Drupal 8.7.0, to be removed before Drupal 9.0.0. Use \Drupal\content_translation\ContentTranslationHandlerAccessInterface instead.
+    */
+   public function getTranslationAccess(EntityInterface $entity, $op);
+ 
+diff --git a/modules/content_translation/src/ContentTranslationManager.php b/modules/content_translation/src/ContentTranslationManager.php
+index e16cf168b8..1353c3b8fb 100644
+--- a/modules/content_translation/src/ContentTranslationManager.php
++++ b/modules/content_translation/src/ContentTranslationManager.php
+@@ -45,6 +45,13 @@ class ContentTranslationManager implements ContentTranslationManagerInterface, B
+     return $this->entityManager->getHandler($entity_type_id, 'translation');
+   }
+ 
++  /**
++   * {@inheritdoc}
++   */
++  public function getTranslationAccessControlHandler($entity_type_id) {
++    return $this->entityManager->getHandler($entity_type_id, 'translation_access');
++  }
++
+   /**
+    * {@inheritdoc}
+    */
+diff --git a/modules/content_translation/src/ContentTranslationManagerInterface.php b/modules/content_translation/src/ContentTranslationManagerInterface.php
+index 1852026126..d531baf897 100644
+--- a/modules/content_translation/src/ContentTranslationManagerInterface.php
++++ b/modules/content_translation/src/ContentTranslationManagerInterface.php
+@@ -39,6 +39,17 @@ interface ContentTranslationManagerInterface {
+    */
+   public function getTranslationHandler($entity_type_id);
+ 
++  /**
++   * Returns an instance of the Content translation access handler.
++   *
++   * @param string $entity_type_id
++   *   The type of the entity being translated.
++   *
++   * @return \Drupal\Core\Entity\EntityAccessControlHandlerInterface
++   *   An instance of the content translation handler.
++   */
++  public function getTranslationAccessControlHandler($entity_type_id);
++
+   /**
+    * Returns an instance of the Content translation metadata.
+    *
+diff --git a/modules/content_translation/src/Controller/ContentTranslationController.php b/modules/content_translation/src/Controller/ContentTranslationController.php
+index 3f5891b73a..d6183030f3 100644
+--- a/modules/content_translation/src/Controller/ContentTranslationController.php
++++ b/modules/content_translation/src/Controller/ContentTranslationController.php
+@@ -85,7 +85,8 @@ class ContentTranslationController extends ControllerBase {
+     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
+     $entity = $route_match->getParameter($entity_type_id);
+     $account = $this->currentUser();
+-    $handler = $this->entityManager()->getHandler($entity_type_id, 'translation');
++    /** @var \Drupal\Core\Entity\EntityAccessControlHandlerInterface $handler */
++    $handler = $this->entityManager()->getHandler($entity_type_id, 'translation_access');
+     $manager = $this->manager;
+     $entity_type = $entity->getEntityType();
+     $use_latest_revisions = $entity_type->isRevisionable() && ContentTranslationManager::isPendingRevisionSupportEnabled($entity_type_id, $entity->bundle());
+@@ -204,8 +205,8 @@ class ContentTranslationController extends ControllerBase {
+           // If the user is allowed to edit the entity we point the edit link to
+           // the entity form, otherwise if we are not dealing with the original
+           // language we point the link to the translation form.
+-          $update_access = $entity->access('update', NULL, TRUE);
+-          $translation_access = $handler->getTranslationAccess($entity, 'update');
++          $update_access = $translation->access('update', NULL, TRUE);
++          $translation_access = $handler->access($translation, 'update', NULL, TRUE);
+           $cacheability = $cacheability
+             ->merge(CacheableMetadata::createFromObject($update_access))
+             ->merge(CacheableMetadata::createFromObject($translation_access));
+@@ -243,7 +244,7 @@ class ContentTranslationController extends ControllerBase {
+             if ($delete_route_access->isAllowed()) {
+               $source_name = isset($languages[$source]) ? $languages[$source]->getName() : $this->t('n/a');
+               $delete_access = $entity->access('delete', NULL, TRUE);
+-              $translation_access = $handler->getTranslationAccess($entity, 'delete');
++              $translation_access = $handler->access($translation, 'delete', NULL, TRUE);
+               $cacheability
+                 ->addCacheableDependency($delete_access)
+                 ->addCacheableDependency($translation_access);
+@@ -272,7 +273,7 @@ class ContentTranslationController extends ControllerBase {
+           $row_title = $source_name = $this->t('n/a');
+           $source = $entity->language()->getId();
+ 
+-          $create_translation_access = $handler->getTranslationAccess($entity, 'create');
++          $create_translation_access = $handler->createAccess($entity, NULL, ['langcode' => $language->getId(), 'source_entity' => $entity], TRUE);
+           $cacheability = $cacheability
+             ->merge(CacheableMetadata::createFromObject($create_translation_access));
+           if ($source != $langcode && $create_translation_access->isAllowed()) {
+diff --git a/modules/content_translation/tests/modules/content_translation_test/content_translation_test.module b/modules/content_translation/tests/modules/content_translation_test/content_translation_test.module
+index 50495a8c79..dbf1d0eab3 100644
+--- a/modules/content_translation/tests/modules/content_translation_test/content_translation_test.module
++++ b/modules/content_translation/tests/modules/content_translation_test/content_translation_test.module
+@@ -26,6 +26,43 @@ function content_translation_test_entity_bundle_info_alter(&$bundles) {
+   }
+ }
+ 
++
++/**
++ * Implements hook_entity_translation_access().
++ */
++function content_translation_test_entity_translation_create_access(EntityInterface $entity, AccountInterface $account, array $context) {
++  $access = \Drupal::state()->get('content_translation.entity_translation_access.' . $entity->getEntityTypeId());
++  if (isset($access['create'])) {
++    if ($access['create'] == FALSE) {
++      return AccessResult::forbidden();
++    }
++    else {
++      return AccessResult::allowed();
++    }
++  }
++  else {
++    return AccessResult::neutral();
++  }
++}
++
++/**
++ * Implements hook_entity_translation_access().
++ */
++function content_translation_test_entity_translation_access(EntityInterface $entity, $operation, AccountInterface $account) {
++  $access = \Drupal::state()->get('content_translation.entity_translation_access.' . $entity->getEntityTypeId());
++  if (isset($access[$operation])) {
++    if ($access[$operation] == FALSE) {
++      return AccessResult::forbidden();
++    }
++    else {
++      return AccessResult::allowed();
++    }
++  }
++  else {
++    return AccessResult::neutral();
++  }
++}
++
+ /**
+  * Implements hook_entity_access().
+  */
+diff --git a/modules/content_translation/tests/src/Kernel/ContentTranslationAccessControlHandlerTest.php b/modules/content_translation/tests/src/Kernel/ContentTranslationAccessControlHandlerTest.php
+new file mode 100644
+index 0000000000..f7498e42f9
+--- /dev/null
++++ b/modules/content_translation/tests/src/Kernel/ContentTranslationAccessControlHandlerTest.php
+@@ -0,0 +1,154 @@
++<?php
++
++namespace Drupal\Tests\content_translation\Kernel;
++
++use Drupal\Core\Entity\Entity;
++use Drupal\Core\Session\AccountInterface;
++use Drupal\entity_test\Entity\EntityTest;
++use Drupal\entity_test\Entity\EntityTestMul;
++use Drupal\KernelTests\Core\Entity\EntityLanguageTestBase;
++use Drupal\language\Entity\ConfigurableLanguage;
++
++/**
++ * Tests the entity translation access control handler.
++ *
++ * @coversDefaultClass \Drupal\content_translation\ContentTranslationAccessControlHandler
++ * @group content_translation
++ */
++class ContentTranslationAccessControlHandlerTest extends EntityLanguageTestBase {
++
++  public static $modules = [
++    'system',
++    'user',
++    'entity_test',
++    'language',
++    'content_translation',
++    'content_translation_test',
++  ];
++
++  /**
++   * {@inheritdoc}
++   */
++  public function setUp() {
++    parent::setUp();
++
++    $this->installEntitySchema('entity_test_mul');
++
++    ConfigurableLanguage::createFromLangcode('it')->save();
++  }
++
++  /**
++   * Asserts entity access correctly grants or denies access.
++   */
++  public function assertEntityTranslationAccess($ops, Entity $entity, AccountInterface $account = NULL, $enable_hooks = FALSE, $hook_permission = TRUE) {
++
++    $handler = $this->getTranslationHandler($entity);
++
++    foreach ($ops as $op => $result) {
++      if ($enable_hooks == TRUE) {
++        \Drupal::state()
++          ->set(('content_translation.entity_translation_access.' . $entity->getEntityTypeId()), [$op => $hook_permission]);
++      }
++
++      $message = format_string("Entity translation access returns @result with operation '@op'.", [
++        '@result' => !isset($result) ? 'null' : ($result ? 'true' : 'false'),
++        '@op' => $op,
++      ]);
++      if ($op == 'create') {
++        return $this->assertEqual($handler->createAccess($entity->bundle(), $account, ['lancode' => 'it', 'source_entity' => $entity]), $result, $message);
++      }
++      else {
++        $this->assertEqual($handler->access($entity, $account), $result, $message);
++      }
++    }
++  }
++
++  /**
++   * @param \Drupal\Core\Entity\Entity $entity
++   *
++   * @return \Drupal\content_translation\ContentTranslationAccessControlHandler
++   */
++  private function getTranslationHandler($entity) {
++    $handler = $this->container->get('entity.manager')
++      ->getHandler($entity->getEntityTypeId(), 'translation_access');
++    return $handler;
++  }
++
++  /**
++   * Ensures entity access is properly working.
++   */
++  public function testEntityTranslationAccess() {
++    // Set up a non-admin user that is allowed to translate entity_test_mul entities.
++    \Drupal::currentUser()
++      ->setAccount($this->createUser(['uid' => 2], [
++        'translate entity_test_mul',
++        'create content translations',
++      ]));
++
++    $entity = EntityTestMul::create();
++    $entity->save();
++
++    // The current user is allowed to view entities.
++    $this->assertEntityTranslationAccess([
++      'create' => TRUE,
++      'update' => FALSE,
++      'delete' => FALSE,
++      'view' => FALSE,
++    ], $entity);
++
++    \Drupal::currentUser()
++      ->setAccount($this->createUser(['uid' => 3], ['translate entity_test_mul']));
++
++    // The current user is not allowed to view entities.
++    $this->assertEntityTranslationAccess([
++      'create' => FALSE,
++      'update' => FALSE,
++      'delete' => FALSE,
++      'view' => FALSE,
++    ], $entity);
++
++  }
++
++  /**
++   * Ensures default entity access is checked when necessary.
++   *
++   * This ensures that the default checkAccess() implementation of the
++   * entity access control handler is considered if hook_entity_access() has not
++   * explicitly forbidden access. Therefore the default checkAccess()
++   * implementation can forbid access, even after access was already explicitly
++   * allowed by hook_entity_access().
++   *
++   * @see \Drupal\entity_test\EntityTestAccessControlHandler::checkAccess()
++   * @see entity_test_entity_access()
++   */
++  public function testEntityTranslationAccessWithHooks() {
++    // Set up a non-admin user that is allowed to translate entity_test_mul entities.
++    \Drupal::currentUser()
++      ->setAccount($this->createUser(['uid' => 2], [
++        'translate entity_test_mul',
++      ]));
++
++    $entity = EntityTestMul::create();
++    $entity->save();
++
++    // The current user is allowed to view entities.
++    $this->assertEntityTranslationAccess([
++      'create' => TRUE,
++      'update' => TRUE,
++      'delete' => TRUE,
++      'view' => TRUE,
++    ], $entity, NULL, TRUE, TRUE);
++
++    $handler = $this->getTranslationHandler($entity);
++    $handler->resetCache();
++
++    // The current user is not allowed to view entities.
++    $this->assertEntityTranslationAccess([
++      'create' => FALSE,
++      'update' => FALSE,
++      'delete' => FALSE,
++      'view' => FALSE,
++    ], $entity, NULL, TRUE, FALSE);
++  }
++
++}
+diff --git a/modules/content_translation/tests/src/Unit/Access/ContentTranslationManageAccessCheckTest.php b/modules/content_translation/tests/src/Unit/Access/ContentTranslationManageAccessCheckTest.php
+index ad7317f3ad..3be1045347 100644
+--- a/modules/content_translation/tests/src/Unit/Access/ContentTranslationManageAccessCheckTest.php
++++ b/modules/content_translation/tests/src/Unit/Access/ContentTranslationManageAccessCheckTest.php
+@@ -49,9 +49,9 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
+    */
+   public function testCreateAccess() {
+     // Set the mock translation handler.
+-    $translation_handler = $this->getMock('\Drupal\content_translation\ContentTranslationHandlerInterface');
++    $translation_handler = $this->getMock('\Drupal\Core\Entity\EntityAccessControlHandlerInterface');
+     $translation_handler->expects($this->once())
+-      ->method('getTranslationAccess')
++      ->method('access')
+       ->will($this->returnValue(AccessResult::allowed()));
+ 
+     $entity_manager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
