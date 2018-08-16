@@ -52,7 +52,7 @@
   "extra": {
     "patches": {
       "drupal/core": {
-        "Add per entity access check [2985657]": "https://raw.githubusercontent.com/KEY-TEC/content_translation_access/master/patch/content_translation.patch"
+        "Add per entity access check [2985657]": "https://github.com/KEY-TEC/content_translation_access/blob/master/patch/content_translation.patch"
       }
     },
     "installer-paths": {

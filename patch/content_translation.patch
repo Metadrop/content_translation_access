@@ -91,7 +91,7 @@ index cd8b27fdac..ea26ab9493 100644
          $entity_type->set('content_translation_metadata', 'Drupal\content_translation\ContentTranslationMetadataWrapper');
        }
 diff --git a/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php b/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php
-index bbf0540e90..c9aa47da3d 100644
+index bbf0540e90..0540066a8d 100644
 --- a/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php
 +++ b/modules/content_translation/src/Access/ContentTranslationManageAccessCheck.php
 @@ -93,8 +93,8 @@ class ContentTranslationManageAccessCheck implements AccessInterface {
@@ -101,7 +101,7 @@ index bbf0540e90..c9aa47da3d 100644
 -          /* @var \Drupal\content_translation\ContentTranslationHandlerInterface $handler */
 -          $handler = $this->entityManager->getHandler($entity->getEntityTypeId(), 'translation');
 +          /* @var \Drupal\Core\Entity\EntityAccessControlHandlerInterface $handler */
-+          $translation_access_handler = $this->entityManager->getHandler($entity->getEntityTypeId(), 'translation_access');
++          $handler = $this->entityManager->getHandler($entity->getEntityTypeId(), 'translation_access');
            $translations = $entity->getTranslationLanguages();
            $languages = $this->languageManager->getLanguages();
            $source_language = $this->languageManager->getLanguage($source) ?: $entity->language();
@@ -110,7 +110,7 @@ index bbf0540e90..c9aa47da3d 100644
              && !isset($translations[$target_language->getId()]));
            return AccessResult::allowedIf($is_new_translation)->cachePerPermissions()->addCacheableDependency($entity)
 -            ->andIf($handler->getTranslationAccess($entity, $operation));
-+            ->orIf($translation_access_handler->createAccess($entity->bundle(), NULL, ['langcode' => $target_language->getId(), 'source_entity' => $entity], TRUE));
++            ->andIf($handler->createAccess($entity, NULL, ['langcode' => $language->getId(), 'source_entity' => $entity], TRUE));
  
          case 'delete':
            // @todo Remove this in https://www.drupal.org/node/2945956.
@@ -559,7 +559,7 @@ index 1852026126..d531baf897 100644
     * Returns an instance of the Content translation metadata.
     *
 diff --git a/modules/content_translation/src/Controller/ContentTranslationController.php b/modules/content_translation/src/Controller/ContentTranslationController.php
-index 3f5891b73a..d6183030f3 100644
+index 3f5891b73a..c3b8fee744 100644
 --- a/modules/content_translation/src/Controller/ContentTranslationController.php
 +++ b/modules/content_translation/src/Controller/ContentTranslationController.php
 @@ -85,7 +85,8 @@ class ContentTranslationController extends ControllerBase {
@@ -597,7 +597,7 @@ index 3f5891b73a..d6183030f3 100644
            $source = $entity->language()->getId();
  
 -          $create_translation_access = $handler->getTranslationAccess($entity, 'create');
-+          $create_translation_access = $handler->createAccess($entity, NULL, ['langcode' => $language->getId(), 'source_entity' => $entity], TRUE);
++          $create_translation_access = $handler->createAccess($entity->bundle(), NULL, ['langcode' => $language->getId(), 'source_entity' => $entity], TRUE);
            $cacheability = $cacheability
              ->merge(CacheableMetadata::createFromObject($create_translation_access));
            if ($source != $langcode && $create_translation_access->isAllowed()) {
