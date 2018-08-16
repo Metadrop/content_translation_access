@@ -1,0 +1,7 @@
+services:
+  plugin.manager.content_translation_access_language_provider:
+    class: Drupal\content_translation_access\LanguageProviderManager
+    parent: default_plugin_manager
+  content_translation_access.access_control_handler:
+    class: Drupal\content_translation_access\AccessControlHandler
+    arguments: ['@language_manager', '@plugin.manager.content_translation_access_language_provider', '@content_translation.manager']

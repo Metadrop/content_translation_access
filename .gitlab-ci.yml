@@ -1,0 +1,14 @@
+stages:
+ - commit
+image: andockci/service-pipline:latest
+commit:
+ stage: commit
+ script:
+  - acp self-update
+  - acp version
+  - acp connect "andock-ci-server" "dev.key-tec.de" "root"
+  - . acp ssh-add "$SSH_PRIVATE_KEY"
+  - acp fin init
+  - acp fin test
+ tags:
+  - docker

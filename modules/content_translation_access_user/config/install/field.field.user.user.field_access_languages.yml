@@ -1,0 +1,24 @@
+uuid: d89e3589-6312-45d8-8174-b3d081bcbee8
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.user.field_access_languages
+  module:
+    - user
+id: user.user.field_access_languages
+field_name: field_access_languages
+entity_type: user
+bundle: user
+label: Languages
+description: 'Languages of content the user is allowed to add or edit'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:configurable_language'
+  handler_settings:
+    target_bundles: null
+    auto_create: false
+field_type: entity_reference

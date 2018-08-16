@@ -1,0 +1,2 @@
+permission_callbacks:
+  - \Drupal\content_translation_access\Permissions::ctaPermissions

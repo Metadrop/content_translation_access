@@ -1,0 +1,28 @@
+# Basic LAMP stack
+
+version: "2.1"
+
+services:
+  # Web
+  web:
+    extends:
+      file: ${HOME}/.docksal/stacks/services.yml
+      service: web
+    depends_on:
+      - cli
+  # DB
+  db1:
+    extends:
+      file: ${HOME}/.docksal/stacks/services.yml
+      service: db
+
+  # CLI
+  cli:
+    ports:
+     - "2223:22"
+    extends:
+      file: ${HOME}/.docksal/stacks/services.yml
+      service: cli
+    environment:
+      - PATH=/var/www/vendor/bin:$PATH
+      - PHP_IDE_CONFIG=serverName=${VIRTUAL_HOST}

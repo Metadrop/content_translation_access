@@ -1,0 +1,28 @@
+drupal:
+  root: "build"
+  base_url: "http://nginx"
+  database:
+    host: "db1"
+    port: "3306"
+    name: "xml_sender"
+    user: "root"
+    password: "root"
+  post_install:
+    - "./vendor/bin/drush en -y content_translation_access"
+    - "./vendor/bin/drush cr"
+  settings:
+    settings:
+      file_scan_ignore_directories:
+        - "node_modules"
+        - "bower_components"
+        - "vendor"
+        - "${drupal.root}"
+
+commands:
+  drupal:site-setup:
+    - { task: "symlink", from: "../../..", to: "${drupal.root}/modules/custom/content_translation_access" }
+    - { task: "run", command: "drupal:drush-setup" }
+    - { task: "run", command: "drupal:settings-setup" }
+    - { task: "run", command: "setup:phpunit" }
+  setup:phpunit:
+    - { task: "process", source: "phpunit.xml.dist", destination: "phpunit.xml" }

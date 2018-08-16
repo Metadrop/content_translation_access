@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * @file
+ * Adds access hooks.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\AccountInterface;
+
+/**
+ * Implements hook_entity_access() for entity edit/delete access.
+ */
+function content_translation_access_entity_access(EntityInterface $entity, $operation, AccountInterface $account) {
+  /** @var \Drupal\content_translation_access\AccessControlHandlerInterface $access_control_handler */
+  $access_control_handler = \Drupal::service('content_translation_access.access_control_handler');
+  return $access_control_handler->access($entity, $operation, $account);
+
+}
+
+/**
+ * Implements hook_entity_create_access() for entity create access.
+ */
+function content_translation_access_entity_create_access(AccountInterface $account, array $context, $entity_bundle) {
+  /** @var \Drupal\content_translation_access\AccessControlHandlerInterface $access_control_handler */
+  $access_control_handler = \Drupal::service('content_translation_access.access_control_handler');
+  if (isset($context['entity_type_id']) && isset($context['langcode'])) {
+    if ($context['langcode'] == 'x-default') {
+      return $access_control_handler->createAnyAccess($context['entity_type_id'], $entity_bundle, $account);
+    }
+    else {
+      $language = \Drupal::languageManager()->getLanguage($context['langcode']);
+      if ($language != NULL) {
+        return $access_control_handler->createAccess($context['entity_type_id'], $entity_bundle, $language, $account);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_translation_create_access() for create translation.
+ */
+function content_translation_access_entity_translation_create_access(EntityInterface $entity, AccountInterface $account, array $context) {
+  /** @var \Drupal\content_translation_access\AccessControlHandlerInterface $access_control_handler */
+  $access_control_handler = \Drupal::service('content_translation_access.access_control_handler');
+  $language = \Drupal::languageManager()->getLanguage($context['langcode']);
+  return $access_control_handler->createAccess($context['entity_type_id'], $entity->bundle(), $language, $account);
+}
+
+/**
+ * Implements hook_entity_translation_create_access() for create translation.
+ */
+function content_translation_access_entity_translation_access(EntityInterface $entity, $operation, AccountInterface $account) {
+  /** @var \Drupal\content_translation_access\AccessControlHandlerInterface $access_control_handler */
+  $access_control_handler = \Drupal::service('content_translation_access.access_control_handler');
+  return $access_control_handler->access($entity, $operation, $account);
+}
+
+/**
+ * Implements hook_entity_type_alter() for adding a entity validation constraint.
+ */
+function content_translation_access_entity_type_alter(array &$entity_types) {
+  /** @var \Drupal\content_translation\ContentTranslationManagerInterface $cta_manager */
+  foreach ($entity_types as $entity_type) {
+    if ($entity_type->isTranslatable($entity_type->id())) {
+      $entity_type->addConstraint('CreateInLanguage', []);
+    }
+  }
+}

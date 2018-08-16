@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * @file
+ * Adds field_access_languages to the user.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function content_translation_access_user_install() {
+  $config = Drupal::configFactory()
+    ->getEditable('core.entity_form_display.user.user.default');
+  $content = $config->get('content');
+  $hidden = $config->get('hidden');
+  $content['field_access_languages'] = [
+    'type' => 'entity_reference_autocomplete_tags',
+    'weight' => 0,
+    'settings' => [
+      'match_operator' => 'CONTAINS',
+      'size' => '60',
+      'placeholder' => '',
+    ],
+    'third_party_settings' => [],
+  ];
+  unset($hidden['field_access_languages']);
+  $config->set('content', $content);
+  $config->set('hidden', $hidden);
+  $config->save();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function content_translation_access_user_uninstall() {
+  Drupal::configFactory()
+    ->getEditable('field.field.user.user.field_access_languages')
+    ->delete();
+  Drupal::configFactory()
+    ->getEditable('field.storage.user.field_access_languages')
+    ->delete();
+}
