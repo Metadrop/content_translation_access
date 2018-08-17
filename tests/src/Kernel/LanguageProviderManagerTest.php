@@ -10,17 +10,14 @@ use Drupal\KernelTests\KernelTestBase;
  *
  * @group content_translation_access
  */
-class LanguageProviderManagerTest extends KernelTestBase {
-
+class LanguageProviderManagerTest extends ContentTranslationAccessKernelTestBase {
   /**
    * Modules to enable.
    *
    * @var array
    */
   public static $modules = [
-    'content_translation',
-    'content_translation_access',
-    'content_translation_access_test',
+    'content_translation_access_test'
   ];
 
   /**

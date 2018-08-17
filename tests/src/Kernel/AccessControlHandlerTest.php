@@ -2,12 +2,8 @@
 
 namespace Drupal\Tests\content_translation_access\Kernel;
 
-use Drupal\content_translation_access\AccessControlHandler;
-use Drupal\content_translation_access\CTAManager;
-use Drupal\content_translation_access\Plugin\LanguageProviderInterface;
 use Drupal\Core\Language\Language;
-use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
+use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\node\Entity\Node;
 
 /**
@@ -17,44 +13,15 @@ use Drupal\node\Entity\Node;
  *
  * @group content_translation_access
  */
-class AccessControlHandlerTest extends EntityKernelTestBase {
-
+class AccessControlHandlerTest extends ContentTranslationAccessKernelTestBase {
   /**
    * Modules to enable.
    *
    * @var array
    */
   public static $modules = [
-    'system',
     'node',
-    'content_translation',
-    'content_translation_access',
   ];
-
-  /**
-   * The mocked access handler.
-   *
-   * @var \Drupal\content_translation_access\AccessControlHandler
-   */
-  private $accessHandler;
-
-  public function setUp() {
-
-    parent::setUp();
-    /** @var \Drupal\Core\Language\LanguageManagerInterface $language_manager */
-    $language_manager = $this->prophesize(LanguageManagerInterface::class);
-    $language_manager->getLanguages()->willReturn([
-      new Language(['name' => 'de', 'id' => 'de']),
-      new Language(['name' => 'en', 'id' => 'en']),
-    ]);
-
-    /** @var \Drupal\content_translation_access\Plugin\LanguageProviderInterface $language_provider */
-    $language_provider = $this->prophesize(LanguageProviderInterface::class);
-    $language_provider->getLanguages()
-      ->willReturn([new Language(['name' => 'en', 'id' => 'en'])]);
-    $this->accessHandler = new AccessControlHandler($language_manager->reveal(), $language_provider->reveal(), new CTAManager());
-
-  }
 
   /**
    * Test AccessControlHandler::testAccess.
@@ -66,7 +33,8 @@ class AccessControlHandlerTest extends EntityKernelTestBase {
     // Create the article node type with revisions disabled.
     $user = $this->createUser(['uid' => 2], [
       'administer nodes',
-      'update assigned language node page content',
+      'cta translate node page',
+      'cta delete translation node page',
     ]);
     $node_en = Node::create([
       'title' => $this->randomMachineName(8),
@@ -81,7 +49,7 @@ class AccessControlHandlerTest extends EntityKernelTestBase {
     $this->assertEquals(TRUE, $access->isAllowed());
 
     $access = $handler->access($node_en, 'delete', $user);
-    $this->assertEquals(TRUE, $access->isNeutral());
+    $this->assertEquals(TRUE, $access->isAllowed());
 
     $access = $handler->access($node_en, 'view', $user);
     $this->assertEquals(TRUE, $access->isNeutral());
@@ -96,8 +64,7 @@ class AccessControlHandlerTest extends EntityKernelTestBase {
 
     // Create the article node type with revisions disabled.
     $user = $this->createUser(['uid' => 2], [
-      'administer nodes',
-      'create assigned language node page content',
+      'cta translate node page',
     ]);
 
     $en = new Language(['name' => 'en', 'id' => 'en']);
@@ -117,7 +84,7 @@ class AccessControlHandlerTest extends EntityKernelTestBase {
     // Create the article node type with revisions disabled.
     $user = $this->createUser(['uid' => 2], [
       'administer nodes',
-      'create assigned language node page content',
+      'cta translate node page',
     ]);
 
     $handler = $this->accessHandler;
@@ -136,7 +103,7 @@ class AccessControlHandlerTest extends EntityKernelTestBase {
     // Create the article node type with revisions disabled.
     $user = $this->createUser(['uid' => 2], [
       'administer nodes',
-      'create assigned language node page content',
+      'cta translate node page',
     ]);
 
     $handler = $this->accessHandler;

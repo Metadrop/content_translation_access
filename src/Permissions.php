@@ -93,10 +93,13 @@ class Permissions implements ContainerInjectionInterface {
    *   Return true if user has permission.
    */
   public static function hasPermission($operation, $entity_type_id, $bundle_id, AccountInterface $account) {
-    if ($operation == 'update') {
-      $operation = 'edit';
+    if ($operation == 'update' || $operation == 'create') {
+      $operation = 'translate';
     }
-    return $account->hasPermission("$operation assigned language $entity_type_id $bundle_id content");
+    if ($operation == 'delete') {
+      $operation = 'delete translation';
+    }
+    return $account->hasPermission("cta $operation $entity_type_id $bundle_id");
   }
 
   /**
@@ -124,14 +127,11 @@ class Permissions implements ContainerInjectionInterface {
     ];
 
     return [
-      "create assigned language $type_id $bundle_id content" => [
-        'title' => $this->t('[%type_label] %bundle_label: Create new content', $type_params),
+      "cta translate $type_id $bundle_id" => [
+        'title' => $this->t('Translate %type_label %bundle_label (with assigned language)', $type_params),
       ],
-      "edit assigned language $type_id $bundle_id content" => [
-        'title' => $this->t('[%type_label] %bundle_label: Edit content with assigned language', $type_params),
-      ],
-      "create assigned language assigned $type_id $bundle_id content" => [
-        'title' => $this->t('[%type_label] %bundle_label: Delete with assigned language', $type_params),
+      "cta delete translation $type_id $bundle_id" => [
+        'title' => $this->t('Delete translation %type_label %bundle_label (with assigned language)', $type_params),
       ],
     ];
   }
