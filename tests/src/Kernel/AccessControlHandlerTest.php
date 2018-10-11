@@ -93,23 +93,4 @@ class AccessControlHandlerTest extends ContentTranslationAccessKernelTestBase {
     $this->assertEquals(TRUE, $access->isAllowed());
   }
 
-  /**
-   * Test AccessControlHandler::testEntityCreateAccess.
-   *
-   * @covers ::entityCreateAccess()
-   */
-  public function testEntityCreateAccess() {
-
-    // Create the article node type with revisions disabled.
-    $user = $this->createUser(['uid' => 2], [
-      'administer nodes',
-      'cta translate node page',
-    ]);
-
-    $handler = $this->accessHandler;
-    /** @var \Drupal\Core\Access\AccessResultInterface $access */
-    $access = $handler->entityCreateAccess('node', 'page', $user);
-    $this->assertEquals(TRUE, $access->isAllowed());
-  }
-
 }

@@ -139,18 +139,4 @@ class AccessControlHandler implements AccessControlHandlerInterface {
     return $result;
   }
 
-  /**
-   * {@inheritdoc}
-   */
-  public function entityCreateAccess($entity_type_id, $entity_bundle, AccountInterface $account) {
-    return NULL;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function entityAccess(EntityInterface $entity, $operation, AccountInterface $account) {
-    return NULL;
-  }
-
 }

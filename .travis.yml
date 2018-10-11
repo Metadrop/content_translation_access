@@ -32,8 +32,8 @@ before_script:
   - fin init
 
 script:
-  - fin exec "./vendor/bin/grumphp run"
-  - fin exec "php ./vendor/bin/phpunit"
+  - fin exec "/var/www/vendor/bin/grumphp run"
+  - fin exec "php /var/www/vendor/bin/phpunit"
 
 notifications:
   email: false

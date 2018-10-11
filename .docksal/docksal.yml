@@ -11,7 +11,7 @@ services:
     depends_on:
       - cli
   # DB
-  db1:
+  db:
     extends:
       file: ${HOME}/.docksal/stacks/services.yml
       service: db
@@ -19,7 +19,7 @@ services:
   # CLI
   cli:
     ports:
-     - "2223:22"
+     - "2228:22"
     extends:
       file: ${HOME}/.docksal/stacks/services.yml
       service: cli

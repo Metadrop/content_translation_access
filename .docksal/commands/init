@@ -94,8 +94,8 @@ site_install ()
     cd $PROJECT_ROOT
     fin up
     copy_settings_file "${PROJECT_ROOT}/runner.yml.dist" "${PROJECT_ROOT}/runner.yml"
-	fin exec run drupal:site-setup
-	fin exec run drupal:site-install
+	fin exec /var/www/vendor/bin/run drupal:site-setup
+	fin exec /var/www/vendor/bin/run drupal:site-install
 }
 
 #-------------------------- END: Functions --------------------------------
