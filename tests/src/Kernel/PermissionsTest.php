@@ -31,7 +31,7 @@ class PermissionsTest extends EntityKernelTestBase {
   public function testHasPermission() {
 
     // Create the article node type with revisions disabled.
-    $user = $this->createUser(['uid' => 2], ['administer nodes', 'translate cta node page']);
+    $user = $this->createUser(['uid' => 2], ['administer nodes', 'cta translate node page']);
 
     $has_permission = Permissions::hasPermission('update', 'node', 'page', $user);
     $this->assertEquals(TRUE, $has_permission);

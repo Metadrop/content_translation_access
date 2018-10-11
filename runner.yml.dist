@@ -1,10 +1,10 @@
 drupal:
   root: "build"
-  base_url: "http://nginx"
+  base_url: "http://content-translation-access.docksal"
   database:
-    host: "db1"
+    host: "db"
     port: "3306"
-    name: "xml_sender"
+    name: "content_translation_access"
     user: "root"
     password: "root"
   post_install:
