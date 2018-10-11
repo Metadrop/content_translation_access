@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * @file
+ * Add content translation access permission.
+ */
+
+/**
+ * Implements hook_entity_field_access()
+ */
+function content_translation_access_user_entity_field_access($operation, \Drupal\Core\Field\FieldDefinitionInterface $field_definition, \Drupal\Core\Session\AccountInterface $account, \Drupal\Core\Field\FieldItemListInterface $items = NULL) {
+  if ($field_definition->getName() == 'field_access_languages') {
+    if (!$account->hasPermission('edit local translation access')) {
+      return \Drupal\Core\Access\AccessResult::forbidden();
+    }
+  }
+  return \Drupal\Core\Access\AccessResult::neutral();
+}
