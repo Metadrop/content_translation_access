@@ -23,10 +23,9 @@ install:
   - curl -fsSL get.docksal.io | sh
   - fin up
   - fin exec composer require webflo/drupal-core-require-dev:$DRUPAL_VERSION --dev
-
 before_script:
   - fin init
-
+  - cat phpunit.xml
 script:
   - fin exec "/var/www/vendor/bin/grumphp run"
   - fin exec "php /var/www/vendor/bin/phpunit"
