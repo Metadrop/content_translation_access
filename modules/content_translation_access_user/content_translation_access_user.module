@@ -1,0 +1,24 @@
+<?php
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Field\FieldDefinitionInterface;
+use Drupal\Core\Field\FieldItemListInterface;
+
+/**
+ * @file
+ * Add content translation access permission.
+ */
+
+/**
+ * Implements hook_entity_field_access()
+ */
+function content_translation_access_user_entity_field_access($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+  if ($field_definition->getName() == 'field_access_languages') {
+    // check if permission for user is set for field_access_languages
+    if (!$account->hasPermission('edit local translation access')) {
+      return AccessResult::forbidden();
+    }
+  }
+  return AccessResult::neutral();
+}
