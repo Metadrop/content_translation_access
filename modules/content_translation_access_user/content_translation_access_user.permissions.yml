@@ -1,6 +1,3 @@
-edit local translation access:
-  title: 'edit local translation access'
-  description: 'Edit the local transaction access for an user.'
-show entity non translatable fields:
-  title: 'show entity non translatable fields'
-  description: 'User is shown and can edit non translatable fields on translation forms, when translation setting "Hide non translatable fields on translation forms with permission" for entity is activated.'
+edit user translation languages:
+  title: 'edit user translation languages'
+  description: 'Edit the user transaction languages.'

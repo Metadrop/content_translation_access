@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\content_translation_access_user;
+namespace Drupal\content_translation_access;
 
 use Drupal\content_translation\ContentTranslationHandler;
 use Drupal\content_translation\ContentTranslationManager;
@@ -17,7 +17,7 @@ use Drupal\Core\Render\Element;
  *
  * @ingroup entity_api
  */
-class LocalContentTranslationHandler extends ContentTranslationHandler {
+class ContentTranslationAccessHandler extends ContentTranslationHandler {
 
   /**
    * {@inheritdoc}
@@ -47,7 +47,7 @@ class LocalContentTranslationHandler extends ContentTranslationHandler {
   /**
    * Process callback: Hide non translatable fields if missing permission.
    *
-   * @see \Drupal\content_translation_access_user\LocalContentTranslationHandler::entityFormAlter()
+   * @see \Drupal\content_translation_access_user\ContentTranslationAccessHandler::entityFormAlter()
    */
   public function hideNonTranslatableFieldsWithPermission($element, FormStateInterface $form_state, $form) {
     static $ignored_types;
