@@ -67,7 +67,7 @@ function content_translation_access_entity_type_alter(array &$entity_types) {
   /* @var $entity_types \Drupal\Core\Entity\EntityTypeInterface[] */
   foreach ($entity_types as $entity_type) {
     if ($entity_type->isTranslatable()) {
-      $entity_type->setHandlerClass('translation', 'Drupal\content_translation_access_user\ContentTranslationAccessHandler');
+      $entity_type->setHandlerClass('translation', 'Drupal\content_translation_access\ContentTranslationAccessHandler');
     }
   }
 }
