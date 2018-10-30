@@ -104,13 +104,15 @@ class AccessControlHandler implements AccessControlHandlerInterface {
   /**
    * {@inheritdoc}
    */
-  public function createAccess($entity_type_id, $entity_bundle, Language $language, AccountInterface $account) {
+  public function createAccess($entity_type_id, $entity_bundle, Language $language, AccountInterface $account, EntityInterface $source_entity = NULL) {
     // If the entity type is not supported return neutral.
     if ($this->contentTranslationManager->isEnabled($entity_type_id, $entity_bundle) == FALSE) {
       return AccessResult::neutral();
     }
 
-    if ($this->hasAssignedLanguage($language) && Permissions::hasPermission('create', $entity_type_id, $entity_bundle, $account)) {
+    if ($this->hasAssignedLanguage($language)
+      && Permissions::hasPermission($source_entity == 'NULL' ? 'create' : 'update',
+        $entity_type_id, $entity_bundle, $account)) {
       $result = AccessResult::allowed();
     }
     else {

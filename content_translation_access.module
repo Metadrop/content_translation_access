@@ -44,7 +44,7 @@ function content_translation_access_entity_translation_create_access(EntityInter
   /** @var \Drupal\content_translation_access\AccessControlHandlerInterface $access_control_handler */
   $access_control_handler = \Drupal::service('content_translation_access.access_control_handler');
   $language = \Drupal::languageManager()->getLanguage($context['langcode']);
-  return $access_control_handler->createAccess($context['entity_type_id'], $entity->bundle(), $language, $account);
+  return $access_control_handler->createAccess($context['entity_type_id'], $entity->bundle(), $language, $account, $entity);
 }
 
 /**

@@ -61,12 +61,14 @@ interface AccessControlHandlerInterface {
    * @param \Drupal\Core\Language\Language $language
    *   The language.
    * @param \Drupal\Core\Session\AccountInterface $account
-   *   (optional) The user session for which to check access, or NULL to check
+   *   The user session for which to check access, or NULL to check
    *   access for the current user. Defaults to NULL.
+   * @param \Drupal\Core\Entity\EntityInterface $source_entity
+   *   The source translation entity or null if there is no source.
    *
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
    */
-  public function createAccess($entity_type_id, $entity_bundle, Language $language, AccountInterface $account);
+  public function createAccess($entity_type_id, $entity_bundle, Language $language, AccountInterface $account, EntityInterface $source_entity = NULL);
 
 }

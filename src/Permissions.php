@@ -93,9 +93,14 @@ class Permissions implements ContainerInjectionInterface {
    *   Return true if user has permission.
    */
   public static function hasPermission($operation, $entity_type_id, $bundle_id, AccountInterface $account) {
-    if ($operation == 'update' || $operation == 'create') {
+    if ($operation == 'update') {
       $operation = 'translate';
     }
+
+    if ($operation == 'create') {
+      $operation = 'create translation';
+    }
+
     if ($operation == 'delete') {
       $operation = 'delete translation';
     }
@@ -127,6 +132,9 @@ class Permissions implements ContainerInjectionInterface {
     ];
 
     return [
+      "cta create translation $type_id $bundle_id" => [
+        'title' => $this->t('Create %type_label %bundle_label (with assigned language)', $type_params),
+      ],
       "cta translate $type_id $bundle_id" => [
         'title' => $this->t('Translate %type_label %bundle_label (with assigned language)', $type_params),
       ],

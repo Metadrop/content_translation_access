@@ -95,7 +95,7 @@ class CTALanguageSelectWidget extends LanguageSelectWidget implements ContainerF
               // we check if the user can translate in this language.
               $result = \Drupal::entityTypeManager()
                 ->getAccessControlHandler($entity->getEntityTypeId())
-                ->createAccess($entity->bundle(), $this->currentUser->getAccount(), ['langcode' => $language->getId()], TRUE);
+                ->access($entity, 'update', $this->currentUser->getAccount(), TRUE);
             }
           }
         }
