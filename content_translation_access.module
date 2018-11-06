@@ -66,7 +66,8 @@ function content_translation_access_entity_type_alter(array &$entity_types) {
   // Provide defaults for translation info.
   /* @var $entity_types \Drupal\Core\Entity\EntityTypeInterface[] */
   foreach ($entity_types as $entity_type) {
-    if ($entity_type->isTranslatable()) {
+    // @TODO: Find a better way to remove fields.
+    if ($entity_type->isTranslatable() && $entity_type->id() == 'node') {
       $entity_type->setHandlerClass('translation', 'Drupal\content_translation_access\ContentTranslationAccessHandler');
     }
   }
