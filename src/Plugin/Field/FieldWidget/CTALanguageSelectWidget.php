@@ -86,16 +86,28 @@ class CTALanguageSelectWidget extends LanguageSelectWidget implements ContainerF
           // On edit page:
           if ($entity instanceof TranslatableInterface) {
             // Allow current edited languge.
-            if ($entity->language() == $language) {
+            if ($entity->language()->getId() == $language->getId()) {
               $result = AccessResult::allowed();
             }
-            // Only allow languages in which the node is not translated.
-            if ($entity->hasTranslation($language->getId()) == FALSE) {
-              // For pages in which the node is not translated
-              // we check if the user can translate in this language.
-              $result = \Drupal::entityTypeManager()
-                ->getAccessControlHandler($entity->getEntityTypeId())
-                ->access($entity, 'update', $this->currentUser->getAccount(), TRUE);
+            else {
+              if ($entity->hasTranslation($language->getId()) == FALSE) {
+                // For pages in which the node is not translated
+                // we check if the user can translate in this language.
+                $result = \Drupal::entityTypeManager()
+                  ->getAccessControlHandler($entity->getEntityTypeId())
+                  ->createAccess($entity->bundle(), $this->currentUser->getAccount(), ['langcode' => $language->getId()], TRUE);
+              }
+              else {
+                if ($entity->hasTranslation($language->getId()) == TRUE) {
+                  // For pages in which the node is translated
+                  // we check if update permissions.
+                  $translated_entity = $entity->getTranslation($language->getId());
+                  $result = \Drupal::entityTypeManager()
+                    ->getAccessControlHandler($entity->getEntityTypeId())
+                    ->access($translated_entity, 'update', $this->currentUser->getAccount(), TRUE);
+
+                }
+              }
             }
           }
         }
