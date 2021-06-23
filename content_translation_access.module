@@ -93,7 +93,7 @@ function content_translation_access_form_language_content_settings_form_alter(ar
 
   $form['#attached']['library'][] = 'content_translation/drupal.content_translation.admin';
 
-  $entity_manager = Drupal::entityManager();
+  $entity_manager = Drupal::entityTypeManager();
   $bundle_info_service = \Drupal::service('entity_type.bundle.info');
   foreach ($form['#labels'] as $entity_type_id => $label) {
     $entity_type = $entity_manager->getDefinition($entity_type_id);

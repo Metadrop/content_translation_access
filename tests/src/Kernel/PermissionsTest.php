@@ -2,16 +2,8 @@
 
 namespace Drupal\Tests\content_translation_access\Kernel;
 
-use Drupal\content_translation_access\AccessControlHandler;
 use Drupal\content_translation_access\Permissions;
-use Drupal\content_translation_access\Plugin\LanguageProviderInterface;
-use Drupal\Core\Language\Language;
-use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
-use Drupal\KernelTests\KernelTestBase;
-use Drupal\language\Entity\ConfigurableLanguage;
-use Drupal\node\Entity\Node;
-use Drupal\node\Entity\NodeType;
 
 /**
  * Tests AccessControlHandler.
@@ -21,7 +13,6 @@ use Drupal\node\Entity\NodeType;
  * @group content_translation_access
  */
 class PermissionsTest extends EntityKernelTestBase {
-
 
   /**
    * Test Permissions::hasPermission.

@@ -111,7 +111,7 @@ class AccessControlHandler implements AccessControlHandlerInterface {
     }
 
     if ($this->hasAssignedLanguage($language)
-      && Permissions::hasPermission($source_entity == 'NULL' ? 'create' : 'update',
+      && Permissions::hasPermission($source_entity == NULL ? 'create' : 'update',
         $entity_type_id, $entity_bundle, $account)) {
       $result = AccessResult::allowed();
     }

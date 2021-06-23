@@ -3,7 +3,6 @@
 namespace Drupal\Tests\content_translation_access\Kernel;
 
 use Drupal\Core\Language\Language;
-use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\node\Entity\Node;
 
 /**

@@ -40,6 +40,14 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
     if ($new_translation || $has_translations) {
       // Add the form process function.
       $form['#process'][] = [$this, 'hideNonTranslatableFieldsWithPermission'];
+
+      // Unset process that hide non translatable fields.
+      foreach ($form['#process'] as $key => $value) {
+        if (is_array($value) && $value[0] instanceof ContentTranslationAccessHandler && $value[1] == 'entityFormSharedElements') {
+          unset($form['#process'][$key]);
+        }
+
+      }
     }
 
   }
@@ -70,7 +78,6 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
     $entity = $form_object->getEntity();
     /** @var \Drupal\content_translation\ContentTranslationManagerInterface $content_translation_manager */
     $content_translation_manager = \Drupal::service('content_translation.manager');
-
     $settings = $content_translation_manager->getBundleTranslationSettings($entity->getEntityTypeId(), $entity->bundle());
     $hide_translastion_fields = (!empty($settings['untranslatable_fields_hide_with_permission']) || ContentTranslationManager::isPendingRevisionSupportEnabled($entity->getEntityTypeId(), $entity->bundle()))
                                 && !$this->currentUser->hasPermission('show entity non translatable fields');
@@ -83,10 +90,15 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
     $field_definitions = array_diff_key($entity->getFieldDefinitions(), array_flip($this->getFieldsToSkipFromTranslationChangesCheck($entity)));
 
     foreach (Element::children($element) as $key) {
+
       if (!isset($element[$key]['#type'])) {
-        $this->entityFormSharedElements($element[$key], $form_state, $form);
+        $this->hideNonTranslatableFieldsWithPermission($element[$key], $form_state, $form);
       }
       else {
+        // Add (all languages) clue.
+        if (empty($element[$key]['#multilingual']) && !$translation_form) {
+          $this->addTranslatabilityClue($element[$key]);
+        }
         // Ignore non-widget form elements.
         if (isset($ignored_types[$element[$key]['#type']])) {
           continue;
