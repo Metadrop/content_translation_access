@@ -41,13 +41,6 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
       // Add the form process function.
       $form['#process'][] = [$this, 'hideNonTranslatableFieldsWithPermission'];
 
-      // Unset process that hide non translatable fields.
-      foreach ($form['#process'] as $key => $value) {
-        if (is_array($value) && $value[0] instanceof ContentTranslationAccessHandler && $value[1] == 'entityFormSharedElements') {
-          unset($form['#process'][$key]);
-        }
-
-      }
     }
 
   }
@@ -95,10 +88,6 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
         $this->hideNonTranslatableFieldsWithPermission($element[$key], $form_state, $form);
       }
       else {
-        // Add (all languages) clue.
-        if (empty($element[$key]['#multilingual']) && !$translation_form) {
-          $this->addTranslatabilityClue($element[$key]);
-        }
         // Ignore non-widget form elements.
         if (isset($ignored_types[$element[$key]['#type']])) {
           continue;
