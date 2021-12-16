@@ -69,7 +69,11 @@ class Permissions implements ContainerInjectionInterface {
       $bundles = \Drupal::entityManager()->getBundleInfo($entity_type->id());
       foreach ($bundles as $bundle_id => $bundle_lable) {
         if ($this->contentTranslationManager->isEnabled($entity_type->id(), $bundle_id)) {
-          $perms += $this->buildPermissions($entity_type, $bundle_id, $bundle_lable['label']);
+          $perms += $this->buildPermissions($entity_type, $bundle_id, $bundle_lable['label']) + [
+            "cta translate any entity" => [
+              'title' => $this->t('Translate any entity (with assigned language)'),
+            ]
+          ];
         }
       }
     }
@@ -93,6 +97,10 @@ class Permissions implements ContainerInjectionInterface {
    *   Return true if user has permission.
    */
   public static function hasPermission($operation, $entity_type_id, $bundle_id, AccountInterface $account) {
+    if ($account->hasPermission('cta translate any entity')) {
+      return TRUE;
+    }
+
     if ($operation == 'update') {
       $operation = 'translate';
     }
