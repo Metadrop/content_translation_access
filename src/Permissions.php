@@ -97,7 +97,7 @@ class Permissions implements ContainerInjectionInterface {
    *   Return true if user has permission.
    */
   public static function hasPermission($operation, $entity_type_id, $bundle_id, AccountInterface $account) {
-    if ($account->hasPermission('cta translate any entity')) {
+    if ($account->hasPermission('bypass node access') || $account->hasPermission('cta translate any entity')) {
       return TRUE;
     }
 
