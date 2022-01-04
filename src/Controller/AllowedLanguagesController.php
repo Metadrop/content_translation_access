@@ -2,6 +2,7 @@
 
 namespace Drupal\content_translation_access\Controller;
 
+use Drupal\content_translation_access\Permissions;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\content_translation\Controller\ContentTranslationController;
 use Drupal\user\Entity\User;
@@ -36,8 +37,8 @@ class AllowedLanguagesController extends ContentTranslationController {
       // Cta create translation node article
       // cta delete translation node article
       // cta translate node article.
-      $permission .= " $entity_type_id $bundle_id";
-      $allow_operations[$operation] = $user_entity->hasPermission($permission);
+      $operation_name = $operation == 'add' ? 'create' : $operation;
+      $allow_operations[$operation] = Permissions::hasPermission($operation_name, $entity_type_id, $bundle_id, $user);
     }
 
     if (!$user->hasPermission('translate all languages') && $user_entity->hasRole("local_editor") && !empty($build['content_translation_overview']['#rows'])) {
