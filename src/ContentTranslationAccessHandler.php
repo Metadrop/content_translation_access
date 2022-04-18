@@ -2,11 +2,11 @@
 
 namespace Drupal\content_translation_access;
 
-use Drupal\content_translation\ContentTranslationHandler;
 use Drupal\content_translation\ContentTranslationManager;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\node\NodeTranslationHandler;
 
 /**
  * Class LocalContentTranslationHandler.
@@ -17,13 +17,15 @@ use Drupal\Core\Render\Element;
  *
  * @ingroup entity_api
  */
-class ContentTranslationAccessHandler extends ContentTranslationHandler {
+class ContentTranslationAccessHandler extends NodeTranslationHandler {
 
   /**
    * {@inheritdoc}
    */
   public function entityFormAlter(array &$form, FormStateInterface $form_state, EntityInterface $entity) {
-    parent:: entityFormAlter($form, $form_state, $entity);
+    // Extends NodeTranslationHandler because alter the access to
+    // content_translation fields.
+    parent::entityFormAlter($form, $form_state, $entity);
 
     $form_object = $form_state->getFormObject();
     $form_langcode = $form_object->getFormLangcode($form_state);
