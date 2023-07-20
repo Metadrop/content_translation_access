@@ -3,8 +3,6 @@
 namespace Drupal\Tests\content_translation_access_user\Kernel;
 
 use Drupal\content_translation_access_user\Plugin\ContentTranslationAccess\LanguageProvider\UserLanguageProvider;
-use Drupal\Core\Language\Language;
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
 use Drupal\language\Entity\ConfigurableLanguage;
 
@@ -15,12 +13,15 @@ use Drupal\language\Entity\ConfigurableLanguage;
  */
 class UserLanguageProviderTest extends EntityKernelTestBase {
 
+  /**
+   *
+   */
   public function setUp() {
     parent::setUp();
     $this->installEntitySchema('configurable_language');
     $this->installConfig([
       'user',
-      'content_translation_access_user'
+      'content_translation_access_user',
     ]);
 
   }
@@ -62,4 +63,5 @@ class UserLanguageProviderTest extends EntityKernelTestBase {
       $this->assertEquals($en, $language);
     }
   }
+
 }

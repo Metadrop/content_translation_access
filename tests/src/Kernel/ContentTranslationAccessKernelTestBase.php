@@ -2,13 +2,11 @@
 
 namespace Drupal\Tests\content_translation_access\Kernel;
 
-use Drupal\content_translation\ContentTranslationManager;
 use Drupal\content_translation\ContentTranslationManagerInterface;
 use Drupal\content_translation_access\AccessControlHandler;
 use Drupal\content_translation_access\Plugin\LanguageProviderInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\KernelTests\Core\Entity\EntityLanguageTestBase;
 
 /**
@@ -40,6 +38,9 @@ class ContentTranslationAccessKernelTestBase extends EntityLanguageTestBase {
    */
   protected $accessHandler;
 
+  /**
+   *
+   */
   public function setUp() {
     parent::setUp();
 

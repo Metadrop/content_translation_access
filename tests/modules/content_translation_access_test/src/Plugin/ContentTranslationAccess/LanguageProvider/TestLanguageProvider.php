@@ -13,11 +13,15 @@ use Drupal\Core\Language\Language;
  */
 class TestLanguageProvider implements LanguageProviderInterface {
 
+  /**
+   *
+   */
   public function getLanguages() {
     return [
-      new Language(['name' => 'de', 'id'=> 'de']),
-      new Language(['name' => 'de', 'id'=> 'de']),
-      new Language(['name' => 'en', 'id'=> 'en'])
+      new Language(['name' => 'de', 'id' => 'de']),
+      new Language(['name' => 'de', 'id' => 'de']),
+      new Language(['name' => 'en', 'id' => 'en']),
     ];
   }
+
 }

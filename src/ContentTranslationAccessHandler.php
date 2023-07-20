@@ -2,11 +2,11 @@
 
 namespace Drupal\content_translation_access;
 
-use Drupal\content_translation\ContentTranslationHandler;
 use Drupal\content_translation\ContentTranslationManager;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\node\NodeTranslationHandler;
 
 /**
  * Class LocalContentTranslationHandler.
@@ -17,13 +17,15 @@ use Drupal\Core\Render\Element;
  *
  * @ingroup entity_api
  */
-class ContentTranslationAccessHandler extends ContentTranslationHandler {
+class ContentTranslationAccessHandler extends NodeTranslationHandler {
 
   /**
    * {@inheritdoc}
    */
   public function entityFormAlter(array &$form, FormStateInterface $form_state, EntityInterface $entity) {
-    parent:: entityFormAlter($form, $form_state, $entity);
+    // Extends NodeTranslationHandler because alter the access to
+    // content_translation fields.
+    parent::entityFormAlter($form, $form_state, $entity);
 
     $form_object = $form_state->getFormObject();
     $form_langcode = $form_object->getFormLangcode($form_state);
@@ -40,6 +42,7 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
     if ($new_translation || $has_translations) {
       // Add the form process function.
       $form['#process'][] = [$this, 'hideNonTranslatableFieldsWithPermission'];
+
     }
 
   }
@@ -70,7 +73,6 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
     $entity = $form_object->getEntity();
     /** @var \Drupal\content_translation\ContentTranslationManagerInterface $content_translation_manager */
     $content_translation_manager = \Drupal::service('content_translation.manager');
-
     $settings = $content_translation_manager->getBundleTranslationSettings($entity->getEntityTypeId(), $entity->bundle());
     $hide_translastion_fields = (!empty($settings['untranslatable_fields_hide_with_permission']) || ContentTranslationManager::isPendingRevisionSupportEnabled($entity->getEntityTypeId(), $entity->bundle()))
                                 && !$this->currentUser->hasPermission('show entity non translatable fields');
@@ -83,8 +85,9 @@ class ContentTranslationAccessHandler extends ContentTranslationHandler {
     $field_definitions = array_diff_key($entity->getFieldDefinitions(), array_flip($this->getFieldsToSkipFromTranslationChangesCheck($entity)));
 
     foreach (Element::children($element) as $key) {
+
       if (!isset($element[$key]['#type'])) {
-        $this->entityFormSharedElements($element[$key], $form_state, $form);
+        $this->hideNonTranslatableFieldsWithPermission($element[$key], $form_state, $form);
       }
       else {
         // Ignore non-widget form elements.

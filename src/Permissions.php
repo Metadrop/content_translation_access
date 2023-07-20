@@ -66,7 +66,7 @@ class Permissions implements ContainerInjectionInterface {
     $valid_entity_types = $this->contentTranslationManager->getSupportedEntityTypes();
     // Generate node permissions for all entity types.
     foreach ($valid_entity_types as $entity_type) {
-      $bundles = \Drupal::entityManager()->getBundleInfo($entity_type->id());
+      $bundles = \Drupal::service('entity_type.bundle.info')->getBundleInfo($entity_type->id());
       foreach ($bundles as $bundle_id => $bundle_lable) {
         if ($this->contentTranslationManager->isEnabled($entity_type->id(), $bundle_id)) {
           $perms += $this->buildPermissions($entity_type, $bundle_id, $bundle_lable['label']);

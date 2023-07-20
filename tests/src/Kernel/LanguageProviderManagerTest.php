@@ -3,7 +3,6 @@
 namespace Drupal\Tests\content_translation_access\Kernel;
 
 use Drupal\Core\Language\Language;
-use Drupal\KernelTests\KernelTestBase;
 
 /**
  * @coversDefaultClass \Drupal\content_translation_access\LanguageProviderManager
@@ -17,7 +16,7 @@ class LanguageProviderManagerTest extends ContentTranslationAccessKernelTestBase
    * @var array
    */
   public static $modules = [
-    'content_translation_access_test'
+    'content_translation_access_test',
   ];
 
   /**

@@ -5,3 +5,9 @@ services:
   content_translation_access.access_control_handler:
     class: Drupal\content_translation_access\AccessControlHandler
     arguments: ['@language_manager', '@plugin.manager.content_translation_access_language_provider', '@content_translation.manager']
+  content_translation_access.route_subscriber:
+    class: Drupal\content_translation_access\Routing\AllowedLanguagesRouteSubscriber
+    arguments: ['@content_translation.manager']
+    tags:
+      - { name: event_subscriber }
+
