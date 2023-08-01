@@ -10,6 +10,7 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\content_translation\ContentTranslationManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\content_translation\BundleTranslationSettingsInterface;
+use Drupal\node\NodeInterface;
 
 /**
  * Implements hook_entity_access() for entity edit/delete access.
@@ -131,4 +132,30 @@ function content_translation_access_form_language_content_settings_form_alter(ar
       }
     }
   }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function content_translation_access_module_implements_alter(&$implementations, $hook) {
+
+  // Change the order to ovveride the node_node_access result.
+  if ($hook == 'node_access') {
+    $group = $implementations['content_translation_access'];
+    unset($implementations['content_translation_access']);
+    $implementations['content_translation_access'] = $group;
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_access().
+ */
+function content_translation_access_node_access(NodeInterface $node, $operation, AccountInterface $account) {
+
+  // Override node access in the case that the user already have language access.
+  /** @var \Drupal\content_translation_access\AccessControlHandlerInterface $access_control_handler */
+  $access_control_handler = \Drupal::service('content_translation_access.access_control_handler');
+  $access = $access_control_handler->access($node, $operation, $account);
+
+  return $access;
 }
