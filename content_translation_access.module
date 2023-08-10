@@ -5,6 +5,7 @@
  * Adds access hooks.
  */
 
+use Drupal\Core\Access\AccessResultNeutral;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
@@ -154,23 +155,49 @@ function content_translation_access_module_implements_alter(&$implementations, $
  * Implements hook_ENTITY_TYPE_access().
  */
 function content_translation_access_node_access(NodeInterface $node, $operation, AccountInterface $account) {
-  // Override node access in the case that the user already have
-  // content translation access.
+
+  // Checks the access on the translation add
+  // because the Media Library access control do not
+  // have the right language because the translation does not exists yet.
+  // @see https://www.drupal.org/project/drupal/issues/3197416
+  if ($operation !== 'update') {
+    return AccessResultNeutral::neutral();
+  }
+
+
   $valid_routes = [
     'entity.node.content_translation_add',
   ];
 
   $current_route = \Drupal::routeMatch()->getRouteName();
 
+  // Get also the previous route in the case of AJAX petitions.
   try {
     $previousUrl = \Drupal::request()->server->get('HTTP_REFERER');
-    $router = \Drupal::service('router.no_access_checks');
-    $match_route = $previousUrl ? $router->match($previousUrl) : [];
+    if (isset($previousUrl)) {
+      /** @var \Drupal\Core\Routing\RouteProvider $route_provider */
+      $route_provider = \Drupal::service('router.route_provider');
+      $path = parse_url($previousUrl)['path'] ?? '';
+      // Remove language prefix.
+      $previousUrl = strstr($path, '/node') !== FALSE ? strstr($path, '/node') : '';
+      $found_routes = $route_provider->getRoutesByPattern($previousUrl);
+      $iterator = $found_routes->getIterator();
+      $iterator->rewind();
+      if (!$iterator->valid()) {
+        throw new Exception('There is no any element!');
+      }
+
+      $match_route = $iterator->current();
+
+    } else {
+      $match_route = '';
+    }
+
   }
   catch (\Exception) {
     // The route using that path hasn't been found,
     // or the HTTP method isn't allowed for that route.
-    $match_route = [];
+    $match_route = '';
   }
 
   $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_CONTENT);
@@ -180,8 +207,7 @@ function content_translation_access_node_access(NodeInterface $node, $operation,
 
   // Only pass the language if the translation is on the creation process.
   // Checks that the current route or the referrer is translation add route.
-  if ((in_array($current_route, $valid_routes) || isset($match_route['_route'])
-      && in_array($match_route['_route'], $valid_routes))
+  if ((in_array($current_route, $valid_routes) || in_array($match_route, $valid_routes))
     && $language instanceof Language) {
 
     $access = $access_control_handler->access($node, $operation, $account, $language);
