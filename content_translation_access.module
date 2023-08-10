@@ -181,13 +181,8 @@ function content_translation_access_node_access(NodeInterface $node, $operation,
       // Remove language prefix.
       $previousUrl = strstr($path, '/node') !== FALSE ? strstr($path, '/node') : '';
       $found_routes = $route_provider->getRoutesByPattern($previousUrl);
-      $iterator = $found_routes->getIterator();
-      $iterator->rewind();
-      if (!$iterator->valid()) {
-        throw new Exception('There is no any element!');
-      }
-
-      $match_route = $iterator->current();
+      $routes = array_keys($found_routes->all());
+      $match_route = current($routes);
 
     } else {
       $match_route = '';
