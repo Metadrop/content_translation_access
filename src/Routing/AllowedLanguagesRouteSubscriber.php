@@ -25,7 +25,7 @@ class AllowedLanguagesRouteSubscriber extends ContentTranslationRouteSubscriber 
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     // Should run after ContentTranslationRouteSubscriber. Therefore priority -230.
     $events[RoutingEvents::ALTER] = ['onAlterRoutes', -230];
     return $events;
