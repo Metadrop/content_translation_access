@@ -10,7 +10,7 @@ interface LanguageProviderInterface {
   /**
    * Accessible languages.
    *
-   * @return \Drupal\Core\Language\Language
+   * @return array|\Drupal\Core\Language\Language|null
    *   Accessible languages.
    */
   public function getLanguages();

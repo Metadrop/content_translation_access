@@ -5,11 +5,16 @@
  * Adds access hooks.
  */
 
+use Drupal\Core\Access\AccessResultNeutral;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Language\Language;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\content_translation\ContentTranslationManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\content_translation\BundleTranslationSettingsInterface;
+use Drupal\node\NodeInterface;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Implements hook_entity_access() for entity edit/delete access.
@@ -131,4 +136,80 @@ function content_translation_access_form_language_content_settings_form_alter(ar
       }
     }
   }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function content_translation_access_module_implements_alter(&$implementations, $hook) {
+
+  // Change the order to ovveride the node_node_access result.
+  if ($hook == 'node_access') {
+    $group = $implementations['content_translation_access'];
+    unset($implementations['content_translation_access']);
+    $implementations['content_translation_access'] = $group;
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_access().
+ */
+function content_translation_access_node_access(NodeInterface $node, $operation, AccountInterface $account) {
+
+  // Checks the access on the translation add
+  // because the Media Library access control do not
+  // have the right language because the translation does not exists yet.
+  // @see https://www.drupal.org/project/drupal/issues/3197416
+  if ($operation !== 'update') {
+    return AccessResultNeutral::neutral();
+  }
+
+
+  $valid_routes = [
+    'entity.node.content_translation_add',
+  ];
+
+  $current_route = \Drupal::routeMatch()->getRouteName();
+
+  // Get also the previous route in the case of AJAX petitions.
+  try {
+    $previousUrl = \Drupal::request()->server->get('HTTP_REFERER');
+    if (isset($previousUrl)) {
+      /** @var \Drupal\Core\Routing\RouteProvider $route_provider */
+      $route_provider = \Drupal::service('router.route_provider');
+      $path = parse_url($previousUrl)['path'] ?? '';
+      // Remove language prefix.
+      $previousUrl = strstr($path, '/node') !== FALSE ? strstr($path, '/node') : '';
+      $found_routes = $route_provider->getRoutesByPattern($previousUrl);
+      $routes = array_keys($found_routes->all());
+      $match_route = current($routes);
+
+    } else {
+      $match_route = '';
+    }
+
+  }
+  catch (\Exception) {
+    // The route using that path hasn't been found,
+    // or the HTTP method isn't allowed for that route.
+    $match_route = '';
+  }
+
+  $language = \Drupal::languageManager()->getCurrentLanguage(LanguageInterface::TYPE_CONTENT);
+
+  /** @var \Drupal\content_translation_access\AccessControlHandlerInterface $access_control_handler */
+  $access_control_handler = \Drupal::service('content_translation_access.access_control_handler');
+
+  // Only pass the language if the translation is on the creation process.
+  // Checks that the current route or the referrer is translation add route.
+  if ((in_array($current_route, $valid_routes) || in_array($match_route, $valid_routes))
+    && $language instanceof Language) {
+
+    $access = $access_control_handler->access($node, $operation, $account, $language);
+  }
+  else {
+    $access = $access_control_handler->access($node, $operation, $account);
+  }
+
+  return $access;
 }

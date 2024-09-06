@@ -8,6 +8,7 @@ use Drupal\content_translation_access\Plugin\LanguageProviderInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\KernelTests\Core\Entity\EntityLanguageTestBase;
+use Prophecy\PhpUnit\ProphecyTrait;
 
 /**
  * Base controller.
@@ -15,6 +16,8 @@ use Drupal\KernelTests\Core\Entity\EntityLanguageTestBase;
  * @group content_translation_access
  */
 class ContentTranslationAccessKernelTestBase extends EntityLanguageTestBase {
+
+  use ProphecyTrait;
 
   /**
    * Modules to enable.
