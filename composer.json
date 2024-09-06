@@ -21,44 +21,5 @@
     "phpro/grumphp": "0.11.4",
     "peridot-php/leo": "^1.6",
     "openeuropa/task-runner": "^0.4"
-  },
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://packages.drupal.org/8"
-    }
-  ],
-  "autoload": {
-    "psr-4": {"Drupal\\content_translation_access\\": "src"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Drupal\\Tests\\content_translation_access\\": "tests/src"
-    }
-  },
-  "scripts": {
-    "drupal-scaffold": "DrupalComposer\\DrupalScaffold\\Plugin::scaffold",
-    "post-install-cmd": [
-      "@drupal-scaffold",
-      "DrupalProject\\composer\\ScriptHandler::createRequiredFiles"
-    ],
-    "post-update-cmd": [
-      "@drupal-scaffold",
-      "DrupalProject\\composer\\ScriptHandler::createRequiredFiles"
-    ]
-  },
-  "extra": {
-    "patches": {
-      "drupal/core": {
-        "Add hook_entity_translation_access drupal.org/i/2918354": "https://www.drupal.org/files/issues/2021-03-24/2918354-18.patch"
-      }
-    },
-    "installer-paths": {
-      "build/core": ["type:drupal-core"],
-      "build/modules/contrib/{$name}": ["type:drupal-module"],
-      "build/profiles/contrib/{$name}": ["type:drupal-profile"],
-      "build/themes/contrib/{$name}": ["type:drupal-theme"]
-    }
   }
 }
