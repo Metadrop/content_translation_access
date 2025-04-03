@@ -16,7 +16,7 @@ class UserLanguageProviderTest extends EntityKernelTestBase {
   /**
    *
    */
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('configurable_language');
     $this->installConfig([
@@ -31,7 +31,7 @@ class UserLanguageProviderTest extends EntityKernelTestBase {
    *
    * @var array
    */
-  public static $modules = [
+  protected static $modules = [
     'content_translation_access',
     'content_translation_access_user',
     'language',
