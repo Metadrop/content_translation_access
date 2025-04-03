@@ -10,12 +10,13 @@ use Drupal\Core\Language\Language;
  * @group content_translation_access
  */
 class LanguageProviderManagerTest extends ContentTranslationAccessKernelTestBase {
+
   /**
    * Modules to enable.
    *
    * @var array
    */
-  public static $modules = [
+  protected static $modules = [
     'content_translation_access_test',
   ];
 

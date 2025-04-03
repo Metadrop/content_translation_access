@@ -13,12 +13,13 @@ use Drupal\node\Entity\Node;
  * @group content_translation_access
  */
 class AccessControlHandlerTest extends ContentTranslationAccessKernelTestBase {
+
   /**
    * Modules to enable.
    *
    * @var array
    */
-  public static $modules = [
+  protected static $modules = [
     'node',
   ];
 

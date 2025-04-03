@@ -78,6 +78,7 @@ class AccessControlHandler implements AccessControlHandlerInterface {
    * {@inheritdoc}
    */
   public function access(EntityInterface $entity, $operation, AccountInterface $account, Language $language = NULL) {
+
     // Operation == view is not supported right. So return neutral.
     if ($operation == 'view') {
       return AccessResult::neutral();

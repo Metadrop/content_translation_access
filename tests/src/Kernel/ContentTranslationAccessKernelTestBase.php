@@ -24,7 +24,7 @@ class ContentTranslationAccessKernelTestBase extends EntityLanguageTestBase {
    *
    * @var array
    */
-  public static $modules = [
+  protected static $modules = [
     'system',
     'user',
     'entity_test',
@@ -44,7 +44,7 @@ class ContentTranslationAccessKernelTestBase extends EntityLanguageTestBase {
   /**
    *
    */
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
 
     /** @var \Drupal\Core\Language\LanguageManagerInterface $language_manager */
